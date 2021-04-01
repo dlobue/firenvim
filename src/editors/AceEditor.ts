@@ -28,7 +28,8 @@ export class AceEditor extends AbstractEditor {
         }
     }
 
-    private getAce (elem) {
+    getAce (selec: string) {
+        const elem = document.querySelector(selec) as any;
         let win_ace = (window as any).ace;
         if (win_ace !== undefined) {
             return win_ace.edit(elem);
