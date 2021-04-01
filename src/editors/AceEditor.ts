@@ -28,10 +28,21 @@ export class AceEditor extends AbstractEditor {
         }
     }
 
+    private getAce (elem) {
+        let win_ace = (window as any).ace;
+        if (win_ace !== undefined) {
+            return win_ace.edit(elem);
+        } else if (elem.hasOwnProperty('aceEditor')) {
+            return elem.aceEditor;
+        } else {
+            throw new Error("Couldn't find AceEditor instance");
+        }
+    }
+
     getContent () {
         return executeInPage(`(${/* istanbul ignore next */ (selec: string) => {
             const elem = document.querySelector(selec) as any;
-            return (window as any).ace.edit(elem).getValue();
+            return this.getAce(elem).getValue();
         }})(${JSON.stringify(computeSelector(this.elem))})`);
     }
 
@@ -39,10 +50,11 @@ export class AceEditor extends AbstractEditor {
         return executeInPage(`(${/* istanbul ignore next */ (selec: string) => {
             const elem = document.querySelector(selec) as any;
             let position;
-            if ((window as any).ace.edit !== undefined) {
-                position = (window as any).ace.edit(elem).getCursorPosition();
+            let ace = this.getAce(elem);
+            if (ace.getCursorPosition !== undefined) {
+                position = ace.getCursorPosition();
             } else {
-                position = (window as any).ace.selection.cursor;
+                position = ace.selection.cursor;
             }
             return [position.row + 1, position.column];
         }})(${JSON.stringify(computeSelector(this.elem))})`);
@@ -55,10 +67,7 @@ export class AceEditor extends AbstractEditor {
     getLanguage () {
         return executeInPage(`(${/* istanbul ignore next */ (selec: string) => {
             const elem = document.querySelector(selec) as any;
-            let ace = (window as any).ace;
-            if (ace.edit !== undefined) {
-                ace = ace.edit(elem);
-            }
+            let ace = this.getAce(elem);
             return ace.session.$modeId.split("/").slice(-1)[0];
         }})(${JSON.stringify(computeSelector(this.elem))})`);
     }
@@ -66,14 +75,14 @@ export class AceEditor extends AbstractEditor {
     setContent (text: string) {
         return executeInPage(`(${/* istanbul ignore next */ (selec: string, str: string) => {
             const elem = document.querySelector(selec) as any;
-            return (window as any).ace.edit(elem).setValue(str, 1);
+            return this.getAce(elem).setValue(str, 1);
         }})(${JSON.stringify(computeSelector(this.elem))}, ${JSON.stringify(text)})`);
     }
 
     setCursor (line: number, column: number) {
         return executeInPage(`(${/* istanbul ignore next */ (selec: string, l: number, c: number) => {
             const elem = document.querySelector(selec) as any;
-            const selection = (window as any).ace.edit(elem).getSelection();
+            const selection = this.getAce(elem).getSelection();
             return selection.moveCursorTo(l - 1, c, false);
         }})(${JSON.stringify(computeSelector(this.elem))}, ${line}, ${column})`);
     }
